@@ -4,6 +4,7 @@ from Bio.PDB.PDBParser import PDBParser
 from Bio.PDB.Polypeptide import is_aa, index_to_one, three_to_index
 from Bio.PDB.Structure import Structure
 from Bio.PDB.Residue import Residue
+from Bio.PDB.Atom import Atom
 from Bio.SVDSuperimposer import SVDSuperimposer
 import numpy as np
 
@@ -23,6 +24,7 @@ model = p.get_structure("model", "1ht0.pdb")
 chain_a = native[0]['A']
 residues_a = [r for r in chain_a]
 
+
 # AA = ["ALA", "CYS", "ASP", "GLU", "PHE", "GLY", "HIS", "ILE", "LYS", "LEU", "MET", "ASN", "PRO", "GLN",
 #       "ARG", "SER", "THR", "VAL", "TRP", "TYR"]
 
@@ -31,14 +33,30 @@ def align(native: Structure, model: Structure, atom_types=["CA", "N", "C", "O"])
 
     # A long one-liner that gets the one-letter amino acid representation for each residue in a structure,
     # then joins those letters into one long string.
-    native_seq = "".join([index_to_one(three_to_index((r.get_resname()))) for r in native[0].get_residues() if is_aa(r)])
+    native_seq = "".join(
+        [index_to_one(three_to_index((r.get_resname()))) for r in native[0].get_residues() if is_aa(r)])
+    model_seq = "".join([index_to_one(three_to_index((r.get_resname()))) for r in model[0].get_residues() if is_aa(r)])
 
-# for r in native[0].get_residues():
-#     if is_aa(r):
-#         index_to_one, three_to_index
-#         print(index_to_one(three_to_index((r.get_resname()))))
+    # Some assertions that can be used
+    assert len(model_seq) == len(native_seq), "The sequences should be of identical length."
 
-# native_seq = "".join([index_to_one(three_to_index((r.get_resname()))) for r in native[0].get_residues() if is_aa(r)])
-#
-# # native_seq = "".join([index_to_one(r) for r in native[0].get_residues() if is_aa(r)])
-# print(native_seq)
+    # Get the coordinates of the Atom object if the Atom is from an amino acid residue,
+    # and the atom type is what's specified in atom_types.
+    # Traditionally RMSD is calculated for either:
+    # Only the alpha-carbon atoms (CA), or
+    # The "protein backbone" atoms (CA, N, C, O), or
+    # All atoms
+    native_coords = [a.get_coord() for a in native[0].get_atoms() if
+                     is_aa(a.parent.get_resname()) and a.get_id() in atom_types]
+    model_coords = [a.get_coord() for a in model[0].get_atoms() if
+                    is_aa(a.parent.get_resname()) and a.get_id() in atom_types]
+
+    si = SVDSuperimposer()
+    si.set(np.array(native_coords), np.array(model_coords))
+    si.run()  # Run the SVD alignment
+
+    return si
+
+si = align(native, model)
+print("RMSD before alignment: {:.2f} angstroms; full-backbone RMSD after alignment: {:.2f} angstroms".format(si.get_init_rms(),
+                                                                                                    si.get_rms()))
