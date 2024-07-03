@@ -1,11 +1,13 @@
-from Bio.Seq import Seq
+# importing modules
+from Bio.PDB.PDBParser import PDBParser
+from Bio.SVDSuperimposer import SVDSuperimposer
+import numpy as np
 
-my_seq = Seq("AGTACACTGGT")
+# Let's get our two structures; call them native (true) and model
+p = PDBParser(QUIET=True)
+native = p.get_structure("native", "1hso.pdb")
+model = p.get_structure("model", "1ht0.pdb")
 
-print(my_seq)
-
-print(my_seq.complement())
-
-print(my_seq.reverse_complement())
-
+chain_a = native[0]['A']
+residues_a = [r for r in chain_a]
 
