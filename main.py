@@ -9,11 +9,11 @@ from Bio.SVDSuperimposer import SVDSuperimposer
 import numpy as np
 
 # Let's get our two structures; call them native (true) and model
-#struc_list = ["1hso", "1ht0"]
+# struc_list = ["1hso", "1ht0"]
 # PDBList().retrieve_pdb_file(pdb_code=struc_list[0], file_format="pdb")
 # PDBList().retrieve_pdb_file(pdb_code=struc_list[1], file_format="pdb")
 
-#PDBList().download_pdb_files(struc_list,file_format="pdb")
+# PDBList().download_pdb_files(struc_list,file_format="pdb")
 # for struc in struc_list:
 #     print(struc)
 #     PDBList().retrieve_pdb_file(pdb_code=struc, file_format="pdb")
@@ -57,6 +57,32 @@ def align(native: Structure, model: Structure, atom_types=["CA", "N", "C", "O"])
 
     return si
 
-si = align(native, model)
-print("RMSD before alignment: {:.2f} angstroms; full-backbone RMSD after alignment: {:.2f} angstroms".format(si.get_init_rms(),
-                                                                                                    si.get_rms()))
+
+align_structures = align(native, model)
+print("RMSD before alignment: {:.2f} angstroms; full-backbone RMSD after alignment: {:.2f} angstroms".format(
+    align_structures.get_init_rms(),
+    align_structures.get_rms()))
+
+#################
+# Distance matrix
+#################
+
+# Make distance_matrix 11 x 11 array, fill with zeros
+template = np.zeros((11, 11))
+
+# Make 1D array with each axis (remember that in range() and np.arange() the stop parameter is NOT included
+x_axis = np.arange(0, 11, 1)
+y_axis = x_axis
+
+
+# Make a function to call in the loop
+def multiply(mult1, mult2):
+    return mult1 * mult2
+
+
+# Change each element of the array to be the product of the corresponding entry in the two axes
+for row in y_axis:
+    for column in x_axis:
+        template[row, column] = multiply(y_axis[row], x_axis[column])
+
+print(template.reshape(11, 11))
