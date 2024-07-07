@@ -70,7 +70,7 @@ print("RMSD before alignment: {:.2f} angstroms; full-backbone RMSD after alignme
 # Make distance_matrix 11 x 11 array, fill with zeros
 template = np.zeros((11, 11))
 
-# Make 1D array with each axis (remember that in range() and np.arange() the stop parameter is NOT included
+# Make 1D array with each axis (remember that in range() and np.arange() the stop parameter is NOT included)
 x_axis = np.arange(0, 11, 1)
 y_axis = x_axis
 
