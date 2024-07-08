@@ -12,8 +12,9 @@ import urllib.request
 import sys
 
 ##################################
-# retrieve structures from the PDB
+# Retrieve Structures from the PDB
 ##################################
+
 # I wanted to use the PDBList.retrieve_pdb_file() method but on Nov 1 2024 the FTP protocol that this method uses to
 # download PDB files goes offline.
 # Instead, I'm going to use this download_pdb function I found on stack overflow
