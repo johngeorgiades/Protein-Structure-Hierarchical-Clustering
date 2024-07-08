@@ -86,3 +86,39 @@ for row in y_axis:
         template[row, column] = multiply(y_axis[row], x_axis[column])
 
 print(template.reshape(11, 11))
+
+# retrieve structures from the PDB
+# I wanted to use the PDBList.retrieve_pdb_file() method but on Nov 1 2024 the FTP protocol that this method uses to
+# download PDB files goes offline.
+# Instead, I'm going to use this download_pdb function I found on stack overflow
+# https://stackoverflow.com/questions/37335759/using-python-to-download-specific-pdb-files-from-protein-data-bank
+
+import os
+import urllib.request
+import sys
+
+
+def download_pdb(pdbcode, datadir, downloadurl="https://files.rcsb.org/download/"):
+    """
+    Downloads a PDB file from the Internet and saves it in a data directory.
+    :param pdbcode: The standard PDB ID e.g. '3ICB' or '3icb'
+    :param datadir: The directory where the downloaded file will be saved
+    :param downloadurl: The base PDB download URL, cf.
+        `https://www.rcsb.org/pages/download/http#structures` for details
+    :return: the full path to the downloaded PDB file or None if something went wrong
+    """
+    pdbfn = pdbcode + ".pdb"
+    url = downloadurl + pdbfn
+    outfnm = os.path.join(datadir, pdbfn)
+
+    try:
+        urllib.request.urlretrieve(url, outfnm)
+        return outfnm
+    except Exception as err:
+        print(str(err), file=sys.stderr)
+        return None
+
+
+os.makedirs("./pdbFiles")
+
+download_pdb("6nni", "./pdbFiles")
