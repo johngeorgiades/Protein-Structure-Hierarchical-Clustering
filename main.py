@@ -58,6 +58,10 @@ pdbEntries = ["1hso", '1ht0']
 for entry in pdbEntries:
     download_pdb(entry, pdbFileDir)
 
+###########
+# Alignment
+###########
+
 # set up alignment
 p = PDBParser(QUIET=True)
 native = p.get_structure("native", "pdbFiles/1hso.pdb")
