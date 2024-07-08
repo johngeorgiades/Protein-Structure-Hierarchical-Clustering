@@ -19,7 +19,14 @@ import sys
 # the chain identifier. Entries that do not have a chain identifier only have one chain.
 pdbEntries = np.genfromtxt("pdbEntries.csv", dtype=str, encoding="utf-8-sig", delimiter=",", usemask=True)
 
+# Make a list (actually, a numpy array) that has the PDB code (+ chain id if there is one) for each structure
+structureList = np.empty(np.ma.shape(pdbEntries)[0], dtype=np.dtype('U100'))
 
+for struc in range(np.ma.shape(pdbEntries)[0]):
+    if np.ma.getmask(pdbEntries[struc, 1]):
+        structureList[struc] = pdbEntries[struc, 0]
+    else:
+        structureList[struc] = f"{pdbEntries[struc, 0]}_{pdbEntries[struc, 1]}"
 
 ##################################
 # Retrieve Structures from the PDB
@@ -31,6 +38,8 @@ pdbEntries = np.genfromtxt("pdbEntries.csv", dtype=str, encoding="utf-8-sig", de
 # https://stackoverflow.com/questions/37335759/using-python-to-download-specific-pdb-files-from-protein-data-bank
 
 # download_pdb() function
+
+
 def download_pdb(pdbcode, datadir, downloadurl="https://files.rcsb.org/download/"):
     """
     Downloads a PDB file from the Internet and saves it in a data directory.
