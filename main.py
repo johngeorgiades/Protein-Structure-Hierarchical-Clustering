@@ -7,26 +7,62 @@ from Bio.PDB.Residue import Residue
 from Bio.PDB.Atom import Atom
 from Bio.SVDSuperimposer import SVDSuperimposer
 import numpy as np
+import os
+import urllib.request
+import sys
 
-# Let's get our two structures; call them native (true) and model
-# struc_list = ["1hso", "1ht0"]
-# PDBList().retrieve_pdb_file(pdb_code=struc_list[0], file_format="pdb")
-# PDBList().retrieve_pdb_file(pdb_code=struc_list[1], file_format="pdb")
+##################################
+# retrieve structures from the PDB
+##################################
+# I wanted to use the PDBList.retrieve_pdb_file() method but on Nov 1 2024 the FTP protocol that this method uses to
+# download PDB files goes offline.
+# Instead, I'm going to use this download_pdb function I found on stack overflow
+# https://stackoverflow.com/questions/37335759/using-python-to-download-specific-pdb-files-from-protein-data-bank
 
-# PDBList().download_pdb_files(struc_list,file_format="pdb")
-# for struc in struc_list:
-#     print(struc)
-#     PDBList().retrieve_pdb_file(pdb_code=struc, file_format="pdb")
+
+# download_pdb() function
+def download_pdb(pdbcode, datadir, downloadurl="https://files.rcsb.org/download/"):
+    """
+    Downloads a PDB file from the Internet and saves it in a data directory.
+    :param pdbcode: The standard PDB ID e.g. '3ICB' or '3icb'
+    :param datadir: The directory where the downloaded file will be saved
+    :param downloadurl: The base PDB download URL, cf.
+        `https://www.rcsb.org/pages/download/http#structures` for details
+    :return: the full path to the downloaded PDB file or None if something went wrong
+    """
+    pdbfn = pdbcode + ".pdb"
+    url = downloadurl + pdbfn
+    outfnm = os.path.join(datadir, pdbfn)
+
+    try:
+        urllib.request.urlretrieve(url, outfnm)
+        return outfnm
+    except Exception as err:
+        print(str(err), file=sys.stderr)
+        return None
+
+
+# Check if the /pdbFiles folder exists in the current directory. If not, create it.
+pdbFileDir = "./pdbFiles"
+
+if not os.path.exists(pdbFileDir):
+    os.makedirs(pdbFileDir)
+    print("Created file directory " + pdbFileDir)
+
+# import pdb entries to /pdbFiles folder
+pdbEntries = ["1hso", '1ht0']
+
+for entry in pdbEntries:
+    download_pdb(entry, pdbFileDir)
+
+# set up alignment
 p = PDBParser(QUIET=True)
-native = p.get_structure("native", "1hso.pdb")
-model = p.get_structure("model", "1ht0.pdb")
+native = p.get_structure("native", "pdbFiles/1hso.pdb")
+model = p.get_structure("model", "pdbFiles/1ht0.pdb")
 
 chain_a = native[0]['A']
 residues_a = [r for r in chain_a]
 
-
-# AA = ["ALA", "CYS", "ASP", "GLU", "PHE", "GLY", "HIS", "ILE", "LYS", "LEU", "MET", "ASN", "PRO", "GLN",
-#       "ARG", "SER", "THR", "VAL", "TRP", "TYR"]
 
 def align(native: Structure, model: Structure, atom_types=["CA", "N", "C", "O"]) -> SVDSuperimposer:
     """Aligns a model structure onto a native structure using the atom types listed in 'atom_types'."""
@@ -86,39 +122,3 @@ for row in y_axis:
         template[row, column] = multiply(y_axis[row], x_axis[column])
 
 print(template.reshape(11, 11))
-
-# retrieve structures from the PDB
-# I wanted to use the PDBList.retrieve_pdb_file() method but on Nov 1 2024 the FTP protocol that this method uses to
-# download PDB files goes offline.
-# Instead, I'm going to use this download_pdb function I found on stack overflow
-# https://stackoverflow.com/questions/37335759/using-python-to-download-specific-pdb-files-from-protein-data-bank
-
-import os
-import urllib.request
-import sys
-
-
-def download_pdb(pdbcode, datadir, downloadurl="https://files.rcsb.org/download/"):
-    """
-    Downloads a PDB file from the Internet and saves it in a data directory.
-    :param pdbcode: The standard PDB ID e.g. '3ICB' or '3icb'
-    :param datadir: The directory where the downloaded file will be saved
-    :param downloadurl: The base PDB download URL, cf.
-        `https://www.rcsb.org/pages/download/http#structures` for details
-    :return: the full path to the downloaded PDB file or None if something went wrong
-    """
-    pdbfn = pdbcode + ".pdb"
-    url = downloadurl + pdbfn
-    outfnm = os.path.join(datadir, pdbfn)
-
-    try:
-        urllib.request.urlretrieve(url, outfnm)
-        return outfnm
-    except Exception as err:
-        print(str(err), file=sys.stderr)
-        return None
-
-
-os.makedirs("./pdbFiles")
-
-download_pdb("6nni", "./pdbFiles")
