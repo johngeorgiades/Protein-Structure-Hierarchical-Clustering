@@ -1,4 +1,4 @@
-# importing modules
+# import necessary modules
 from Bio.PDB.PDBList import PDBList
 from Bio.PDB.PDBParser import PDBParser
 from Bio.PDB.Polypeptide import is_aa, index_to_one, three_to_index
