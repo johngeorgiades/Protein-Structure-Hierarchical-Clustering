@@ -28,6 +28,7 @@ for struc in range(np.ma.shape(pdbEntries)[0]):
     else:
         structureList[struc] = f"{pdbEntries[struc, 0]}_{pdbEntries[struc, 1]}"
 
+
 ##################################
 # Retrieve Structures from the PDB
 ##################################
@@ -78,24 +79,25 @@ for struc in range(np.ma.shape(pdbEntries)[0]):
 
 # set up alignment
 p = PDBParser(QUIET=True)
-native = p.get_structure("native", "pdbFiles/1hso.pdb")
-model = p.get_structure("model", "pdbFiles/1ht0.pdb")
+templateStruc = p.get_structure("templateStruc", "pdbFiles/1hso.pdb")
+mobileStruc = p.get_structure("mobileStruc", "pdbFiles/1ht0.pdb")
 
-chain_a = native[0]['A']
+chain_a = templateStruc[0]['A']
 residues_a = [r for r in chain_a]
 
 
-def align(native: Structure, model: Structure, atom_types=["CA", "N", "C", "O"]) -> SVDSuperimposer:
-    """Aligns a model structure onto a native structure using the atom types listed in 'atom_types'."""
+def align(template: Structure, mobile: Structure, atom_types=["CA", "N", "C", "O"]) -> SVDSuperimposer:
+    """Aligns a mobile structure onto a template structure using the atom types listed in 'atom_types'."""
 
     # A long one-liner that gets the one-letter amino acid representation for each residue in a structure,
     # then joins those letters into one long string.
-    native_seq = "".join(
-        [index_to_one(three_to_index((r.get_resname()))) for r in native[0].get_residues() if is_aa(r)])
-    model_seq = "".join([index_to_one(three_to_index((r.get_resname()))) for r in model[0].get_residues() if is_aa(r)])
+    template_seq = "".join([index_to_one(three_to_index((r.get_resname())))
+                            for r in template[0].get_residues() if is_aa(r)])
+    mobile_seq = "".join([index_to_one(three_to_index((r.get_resname())))
+                          for r in mobile[0].get_residues() if is_aa(r)])
 
     # Some assertions that can be used
-    assert len(model_seq) == len(native_seq), "The sequences should be of identical length."
+    assert len(mobile_seq) == len(template_seq), "The sequences should be of identical length."
 
     # Get the coordinates of the Atom object if the Atom is from an amino acid residue,
     # and the atom type is what's specified in atom_types.
@@ -103,19 +105,19 @@ def align(native: Structure, model: Structure, atom_types=["CA", "N", "C", "O"])
     # Only the alpha-carbon atoms (CA), or
     # The "protein backbone" atoms (CA, N, C, O), or
     # All atoms
-    native_coords = [a.get_coord() for a in native[0].get_atoms() if
+    template_coords = [a.get_coord() for a in template[0].get_atoms() if
+                       is_aa(a.parent.get_resname()) and a.get_id() in atom_types]
+    mobile_coords = [a.get_coord() for a in mobile[0].get_atoms() if
                      is_aa(a.parent.get_resname()) and a.get_id() in atom_types]
-    model_coords = [a.get_coord() for a in model[0].get_atoms() if
-                    is_aa(a.parent.get_resname()) and a.get_id() in atom_types]
 
     si = SVDSuperimposer()
-    si.set(np.array(native_coords), np.array(model_coords))
+    si.set(np.array(template_coords), np.array(mobile_coords))
     si.run()  # Run the SVD alignment
 
     return si
 
 
-align_structures = align(native, model)
+align_structures = align(templateStruc, mobileStruc)
 print("RMSD before alignment: {:.2f} angstroms; full-backbone RMSD after alignment: {:.2f} angstroms".format(
     align_structures.get_init_rms(),
     align_structures.get_rms()))
@@ -125,7 +127,9 @@ print("RMSD before alignment: {:.2f} angstroms; full-backbone RMSD after alignme
 #################
 
 # Make distance_matrix 11 x 11 array, fill with zeros
-template = np.zeros((11, 11))
+distance_matrix = np.zeros((11, 11))
+# distance_matrix = np.empty((np.ma.shape(pdbEntries)[0], np.ma.shape(pdbEntries)[0]))
+
 
 # Make 1D array with each axis (remember that in range() and np.arange() the stop parameter is NOT included)
 x_axis = np.arange(0, 11, 1)
@@ -140,6 +144,6 @@ def multiply(mult1, mult2):
 # Change each element of the array to be the product of the corresponding entry in the two axes
 for row in y_axis:
     for column in x_axis:
-        template[row, column] = multiply(y_axis[row], x_axis[column])
+        distance_matrix[row, column] = multiply(y_axis[row], x_axis[column])
 
-print(template.reshape(11, 11))
+print(distance_matrix.reshape(11, 11))
