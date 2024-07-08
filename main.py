@@ -17,7 +17,9 @@ import sys
 
 # Import the pdb entry names where each row is an individual chain, column [0] is the entry name, and column [1] is
 # the chain identifier. Entries that do not have a chain identifier only have one chain.
-pdbStructures = np.genfromtxt("pdbEntries.csv", dtype=str, encoding="utf-8-sig", delimiter=",", usemask=True)
+pdbEntries = np.genfromtxt("pdbEntries.csv", dtype=str, encoding="utf-8-sig", delimiter=",", usemask=True)
+
+
 
 ##################################
 # Retrieve Structures from the PDB
@@ -61,9 +63,9 @@ if not os.path.exists(pdbFileDir):
     print("Created file directory " + pdbFileDir)
 
 # import pdb entries to /pdbFiles folder
-pdbEntries = ["1hso", "1ht0"]
+pdbList = ["1hso", "1ht0"]
 
-for entry in pdbEntries:
+for entry in pdbList:
     download_pdb(entry, pdbFileDir)
 
 ###########
