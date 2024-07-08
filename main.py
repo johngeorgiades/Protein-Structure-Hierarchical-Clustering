@@ -34,12 +34,15 @@ def download_pdb(pdbcode, datadir, downloadurl="https://files.rcsb.org/download/
     url = downloadurl + pdbfn
     outfnm = os.path.join(datadir, pdbfn)
 
-    try:
-        urllib.request.urlretrieve(url, outfnm)
-        return outfnm
-    except Exception as err:
-        print(str(err), file=sys.stderr)
-        return None
+    if os.path.exists(outfnm):
+        print(f"The file {pdbfn} was not downloaded because it already exists in path {outfnm}")
+    else:
+        try:
+            urllib.request.urlretrieve(url, outfnm)
+            return outfnm
+        except Exception as err:
+            print(str(err), file=sys.stderr)
+            return None
 
 
 # Check if the /pdbFiles folder exists in the current directory. If not, create it.
