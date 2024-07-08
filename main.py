@@ -11,6 +11,14 @@ import os
 import urllib.request
 import sys
 
+####################################
+# Import structures file as an array
+####################################
+
+# Import the pdb entry names where each row is an individual chain, column [0] is the entry name, and column [1] is
+# the chain identifier. Entries that do not have a chain identifier only have one chain.
+pdbStructures = np.genfromtxt("pdbEntries.csv", dtype=str, encoding="utf-8-sig", delimiter=",", usemask=True)
+
 ##################################
 # Retrieve Structures from the PDB
 ##################################
@@ -19,7 +27,6 @@ import sys
 # download PDB files goes offline.
 # Instead, I'm going to use this download_pdb function I found on stack overflow
 # https://stackoverflow.com/questions/37335759/using-python-to-download-specific-pdb-files-from-protein-data-bank
-
 
 # download_pdb() function
 def download_pdb(pdbcode, datadir, downloadurl="https://files.rcsb.org/download/"):
@@ -54,7 +61,7 @@ if not os.path.exists(pdbFileDir):
     print("Created file directory " + pdbFileDir)
 
 # import pdb entries to /pdbFiles folder
-pdbEntries = ["1hso", '1ht0']
+pdbEntries = ["1hso", "1ht0"]
 
 for entry in pdbEntries:
     download_pdb(entry, pdbFileDir)
