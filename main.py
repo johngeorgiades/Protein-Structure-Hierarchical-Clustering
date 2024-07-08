@@ -37,8 +37,6 @@ for struc in range(np.ma.shape(pdbEntries)[0]):
 # Instead, I'm going to use this download_pdb function I found on stack overflow
 # https://stackoverflow.com/questions/37335759/using-python-to-download-specific-pdb-files-from-protein-data-bank
 
-# download_pdb() function
-
 
 def download_pdb(pdbcode, datadir, downloadurl="https://files.rcsb.org/download/"):
     """
@@ -71,11 +69,8 @@ if not os.path.exists(pdbFileDir):
     os.makedirs(pdbFileDir)
     print("Created file directory " + pdbFileDir)
 
-# import pdb entries to /pdbFiles folder
-pdbList = ["1hso", "1ht0"]
-
-for entry in pdbList:
-    download_pdb(entry, pdbFileDir)
+for struc in range(np.ma.shape(pdbEntries)[0]):
+    download_pdb(pdbEntries[struc, 0], pdbFileDir)
 
 ###########
 # Alignment
