@@ -143,9 +143,16 @@ np.savetxt(fname="distance_matrix.csv", X=distance_matrix, delimiter=",")
 # Hierarchical Clustering from Distance Matrix (SciPy)
 ##########################################################
 
-distance_matrix_condensed = squareform(distance_matrix, checks=False)  # Must condense the matrix for linkage() to read
+# Must condense the matrix for linkage() to read. checks=False because the matrix is essentially symmetrical and the
+# diagonal elements are essentially zero.
+
+distance_matrix_condensed = squareform(distance_matrix, checks=False)
+
+# perform the hierarchical clustering using the average-linkage method
 
 globalRMSDTreeSciPy = linkage(distance_matrix_condensed, "average", optimal_ordering=True)
+
+# generate the dendrogram using the matplotlib package's pyplot module
 
 fig = plt.figure(figsize=(25, 10))
 dn = dendrogram(globalRMSDTreeSciPy, labels=structureList)
