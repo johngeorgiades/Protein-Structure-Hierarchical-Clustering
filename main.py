@@ -1,12 +1,12 @@
+import os
+import sys
+import urllib.request
+
+import numpy as np
 from Bio.PDB.PDBParser import PDBParser
-from Bio.PDB.Polypeptide import is_aa, index_to_one, three_to_index
+from Bio.PDB.Polypeptide import is_aa
 from Bio.PDB.Structure import Structure
 from Bio.SVDSuperimposer import SVDSuperimposer
-import numpy as np
-import os
-import urllib.request
-import sys
-
 
 ####################################
 # Import structures file as an array
@@ -121,12 +121,14 @@ for row in range(numEntries):
     if np.ma.getmask(pdbEntries[row, 1]):
         templateStruc = p.get_structure("templateStruc", f"pdbFiles/{pdbEntries[row, 0]}.pdb")[0]["A"]
     else:
-        templateStruc = p.get_structure("templateStruc", f"pdbFiles/{pdbEntries[row, 0]}.pdb")[0][pdbEntries[row, 1]]
+        templateStruc = p.get_structure("templateStruc", f"pdbFiles/{pdbEntries[row, 0]}.pdb")[0][
+            pdbEntries[row, 1]]
     for column in range(numEntries):
         if np.ma.getmask(pdbEntries[column, 1]):
             mobileStruc = p.get_structure("mobileStruc", f"pdbFiles/{pdbEntries[column, 0]}.pdb")[0]["A"]
         else:
-            mobileStruc = p.get_structure("mobileStruc", f"pdbFiles/{pdbEntries[column, 0]}.pdb")[0][pdbEntries[column, 1]]
+            mobileStruc = p.get_structure("mobileStruc", f"pdbFiles/{pdbEntries[column, 0]}.pdb")[0][
+                pdbEntries[column, 1]]
         align_structures = align(templateStruc, mobileStruc)
         distance_matrix[row, column] = align_structures.get_rms()
     print(f"Alignment {100 * (row + 1) // numEntries} % complete. Starting iteration {row + 2}.")
