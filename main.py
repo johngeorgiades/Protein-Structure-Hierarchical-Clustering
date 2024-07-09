@@ -160,5 +160,5 @@ distance_matrix_condensed = squareform(distance_matrix, checks=False)  # Must co
 globalRMSDTreeSciPy = linkage(distance_matrix_condensed, "average", optimal_ordering=True)
 
 fig = plt.figure(figsize=(25, 10))
-dn = dendrogram(globalRMSDTreeSciPy)
+dn = dendrogram(globalRMSDTreeSciPy, labels=structureList)
 plt.show()
