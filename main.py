@@ -7,6 +7,9 @@ from Bio.PDB.PDBParser import PDBParser
 from Bio.PDB.Polypeptide import is_aa
 from Bio.PDB.Structure import Structure
 from Bio.SVDSuperimposer import SVDSuperimposer
+from scipy.cluster.hierarchy import dendrogram, linkage  # use for scipy clustering + visualization
+from scipy.spatial.distance import squareform  # use to convert redundant distance matrix to condensed distance matrix
+from matplotlib import pyplot as plt  # use to plot the scipy dendrogram
 
 ####################################
 # Import structures file as an array
@@ -135,3 +138,22 @@ for row in range(numEntries):
 
 print(distance_matrix.reshape(np.ma.shape(pdbEntries)[0], np.ma.shape(pdbEntries)[0]))
 np.savetxt(fname="distance_matrix.csv", X=distance_matrix, delimiter=",")
+
+##########################################################
+# Hierarchical Clustering from Distance Matrix (SciPy)
+##########################################################
+
+# Must condense the matrix for linkage() to read. checks=False because the matrix is essentially symmetrical and the
+# diagonal elements are essentially zero.
+
+distance_matrix_condensed = squareform(distance_matrix, checks=False)
+
+# perform the hierarchical clustering using the average-linkage method
+
+globalRMSDTreeSciPy = linkage(distance_matrix_condensed, "average", optimal_ordering=True)
+
+# generate the dendrogram using the matplotlib package's pyplot module
+
+fig = plt.figure(figsize=(25, 10))
+dn = dendrogram(globalRMSDTreeSciPy, labels=structureList)
+plt.show()
