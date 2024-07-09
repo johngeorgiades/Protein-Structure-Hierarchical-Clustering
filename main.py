@@ -1,28 +1,29 @@
-# import necessary modules
-from Bio.PDB.PDBList import PDBList
 from Bio.PDB.PDBParser import PDBParser
 from Bio.PDB.Polypeptide import is_aa, index_to_one, three_to_index
 from Bio.PDB.Structure import Structure
-from Bio.PDB.Residue import Residue
-from Bio.PDB.Atom import Atom
 from Bio.SVDSuperimposer import SVDSuperimposer
 import numpy as np
 import os
 import urllib.request
 import sys
 
+
 ####################################
 # Import structures file as an array
 ####################################
 
 # Import the pdb entry names where each row is an individual chain, column [0] is the entry name, and column [1] is
-# the chain identifier. Entries that do not have a chain identifier only have one chain.
-pdbEntries = np.genfromtxt("pdbEntries.csv", dtype=str, encoding="utf-8-sig", delimiter=",", usemask=True)
+# the chain identifier. Entries that do not have a chain identifier only have one chain. LIST HAS BEEN FILTERED TO
+# REMOVE ENTRIES WITH NON-IDENTICAL SEQUENCES. GOAL WOULD BE TO INCLUDE THOSE SOMEHOW, BUT CURRENT CODE CANNOT DO THAT
+
+pdbEntries = np.genfromtxt("pdbEntriesFiltered.csv", dtype=str, encoding="utf-8-sig", delimiter=",", usemask=True)
+numEntries = np.ma.shape(pdbEntries)[0]
 
 # Make a list (actually, a numpy array) that has the PDB code (+ chain id if there is one) for each structure
-structureList = np.empty(np.ma.shape(pdbEntries)[0], dtype=np.dtype('U100'))
 
-for struc in range(np.ma.shape(pdbEntries)[0]):
+structureList = np.empty(numEntries, dtype=np.dtype('U100'))
+
+for struc in range(numEntries):
     if np.ma.getmask(pdbEntries[struc, 1]):
         structureList[struc] = pdbEntries[struc, 0]
     else:
@@ -64,50 +65,43 @@ def download_pdb(pdbcode, datadir, downloadurl="https://files.rcsb.org/download/
 
 
 # Check if the /pdbFiles folder exists in the current directory. If not, create it.
+
 pdbFileDir = "./pdbFiles"
 
 if not os.path.exists(pdbFileDir):
     os.makedirs(pdbFileDir)
     print("Created file directory " + pdbFileDir)
 
-for struc in range(np.ma.shape(pdbEntries)[0]):
+for struc in range(numEntries):
     download_pdb(pdbEntries[struc, 0], pdbFileDir)
 
 ###########
 # Alignment
 ###########
-
-# set up alignment
 p = PDBParser(QUIET=True)
-templateStruc = p.get_structure("templateStruc", "pdbFiles/1hso.pdb")
-mobileStruc = p.get_structure("mobileStruc", "pdbFiles/1ht0.pdb")
-
-chain_a = templateStruc[0]['A']
-residues_a = [r for r in chain_a]
 
 
-def align(template: Structure, mobile: Structure, atom_types=["CA", "N", "C", "O"]) -> SVDSuperimposer:
+def align(template: Structure, mobile: Structure, atom_types=["CA"]) -> SVDSuperimposer:
     """Aligns a mobile structure onto a template structure using the atom types listed in 'atom_types'."""
 
     # A long one-liner that gets the one-letter amino acid representation for each residue in a structure,
     # then joins those letters into one long string.
-    template_seq = "".join([index_to_one(three_to_index((r.get_resname())))
-                            for r in template[0].get_residues() if is_aa(r)])
-    mobile_seq = "".join([index_to_one(three_to_index((r.get_resname())))
-                          for r in mobile[0].get_residues() if is_aa(r)])
 
-    # Some assertions that can be used
+    template_seq = "".join([r.get_resname()
+                            for r in template.get_residues() if is_aa(r)])
+    mobile_seq = "".join([r.get_resname()
+                          for r in mobile.get_residues() if is_aa(r)])
+
+    # Check if identical sequences. Throw error if not (since atom coordinates won't work).
+
     assert len(mobile_seq) == len(template_seq), "The sequences should be of identical length."
 
     # Get the coordinates of the Atom object if the Atom is from an amino acid residue,
     # and the atom type is what's specified in atom_types.
-    # Traditionally RMSD is calculated for either:
-    # Only the alpha-carbon atoms (CA), or
-    # The "protein backbone" atoms (CA, N, C, O), or
-    # All atoms
-    template_coords = [a.get_coord() for a in template[0].get_atoms() if
+
+    template_coords = [a.get_coord() for a in template.get_atoms() if
                        is_aa(a.parent.get_resname()) and a.get_id() in atom_types]
-    mobile_coords = [a.get_coord() for a in mobile[0].get_atoms() if
+    mobile_coords = [a.get_coord() for a in mobile.get_atoms() if
                      is_aa(a.parent.get_resname()) and a.get_id() in atom_types]
 
     si = SVDSuperimposer()
@@ -117,33 +111,25 @@ def align(template: Structure, mobile: Structure, atom_types=["CA", "N", "C", "O
     return si
 
 
-align_structures = align(templateStruc, mobileStruc)
-print("RMSD before alignment: {:.2f} angstroms; full-backbone RMSD after alignment: {:.2f} angstroms".format(
-    align_structures.get_init_rms(),
-    align_structures.get_rms()))
-
 #################
 # Distance matrix
 #################
 
-# Make distance_matrix 11 x 11 array, fill with zeros
-distance_matrix = np.zeros((11, 11))
-# distance_matrix = np.empty((np.ma.shape(pdbEntries)[0], np.ma.shape(pdbEntries)[0]))
+distance_matrix = np.empty((numEntries, numEntries))
 
+for row in range(numEntries):
+    if np.ma.getmask(pdbEntries[row, 1]):
+        templateStruc = p.get_structure("templateStruc", f"pdbFiles/{pdbEntries[row, 0]}.pdb")[0]["A"]
+    else:
+        templateStruc = p.get_structure("templateStruc", f"pdbFiles/{pdbEntries[row, 0]}.pdb")[0][pdbEntries[row, 1]]
+    for column in range(numEntries):
+        if np.ma.getmask(pdbEntries[column, 1]):
+            mobileStruc = p.get_structure("mobileStruc", f"pdbFiles/{pdbEntries[column, 0]}.pdb")[0]["A"]
+        else:
+            mobileStruc = p.get_structure("mobileStruc", f"pdbFiles/{pdbEntries[column, 0]}.pdb")[0][pdbEntries[column, 1]]
+        align_structures = align(templateStruc, mobileStruc)
+        distance_matrix[row, column] = align_structures.get_rms()
+    print(f"Alignment {100 * (row + 1) // numEntries} % complete. Starting iteration {row + 2}.")
 
-# Make 1D array with each axis (remember that in range() and np.arange() the stop parameter is NOT included)
-x_axis = np.arange(0, 11, 1)
-y_axis = x_axis
-
-
-# Make a function to call in the loop
-def multiply(mult1, mult2):
-    return mult1 * mult2
-
-
-# Change each element of the array to be the product of the corresponding entry in the two axes
-for row in y_axis:
-    for column in x_axis:
-        distance_matrix[row, column] = multiply(y_axis[row], x_axis[column])
-
-print(distance_matrix.reshape(11, 11))
+print(distance_matrix.reshape(np.ma.shape(pdbEntries)[0], np.ma.shape(pdbEntries)[0]))
+# np.savetxt(fname=distance_matrix, X=distance_matrix, delimiter=",")
