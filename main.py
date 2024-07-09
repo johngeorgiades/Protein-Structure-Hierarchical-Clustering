@@ -83,23 +83,28 @@ for struc in range(numEntries):
 ###########
 p = PDBParser(QUIET=True)
 
+
 # RMSD calculation for a specific region
 
 
-def rmsd_specific(template_coords, mobile_coords, rot, tran):
+def rmsd_specific(template_coords, mobile_coords, resi_start: int, resi_end: int, rot, tran):
+    """Calculates the RMSD between two protein atom coordinate sets 'template_coords' and 'mobile_coords' for a
+    specific region of the amino acid sequence between 'resi_start' and 'resi_end'. """
+    s = resi_start - 1
+    e = resi_end
+    template_coords_specific = template_coords[s:e]
     mobile_coords_rotated = np.dot(mobile_coords, rot) + tran
-    diff = template_coords - mobile_coords_rotated
-    rmsd_spec = np.sqrt(sum(sum(diff ** 2)) / template_coords.shape[0])
-    return rmsd_spec
+    mobile_coords_rotated_specific = mobile_coords_rotated[s:e]
+    diff = template_coords_specific - mobile_coords_rotated_specific
+    rmsd = np.sqrt(sum(sum(diff ** 2)) / template_coords_specific.shape[0])
+    return rmsd
 
 
 # alignment function
 
-
-# alignment function
-
-def align(template: Structure, mobile: Structure, atom_type="CA") -> SVDSuperimposer:
-    """Aligns a mobile structure onto a template structure using the atom types listed in 'atom_types'."""
+def align(template: Structure, mobile: Structure, resi_start=None, resi_end=None, atom_type="CA") -> list:
+    """Aligns a mobile structure onto a template structure using the atom types listed in 'atom_types' and calculates
+    the RMSD for a specific region of that alignment."""
 
     # A long one-liner that gets the one-letter amino acid representation for each residue in a structure,
     # then joins those letters into one long string.
@@ -116,24 +121,29 @@ def align(template: Structure, mobile: Structure, atom_type="CA") -> SVDSuperimp
     # Get the coordinates of the Atom object if the Atom is from an amino acid residue,
     # and the atom type is what's specified in atom_types.
 
-    template_coords = [a.get_coord() for a in template.get_atoms() if
-                       is_aa(a.parent.get_resname()) and a.get_id() == atom_type]
-    mobile_coords = [a.get_coord() for a in mobile.get_atoms() if
-                     is_aa(a.parent.get_resname()) and a.get_id() == atom_type]
+    template_coords = np.array([a.get_coord() for a in template.get_atoms() if
+                                is_aa(a.parent.get_resname()) and a.get_id() == atom_type])
+    mobile_coords = np.array([a.get_coord() for a in mobile.get_atoms() if
+                              is_aa(a.parent.get_resname()) and a.get_id() == atom_type])
 
     si = SVDSuperimposer()
-    si.set(np.array(template_coords), np.array(mobile_coords))
+    si.set(template_coords, mobile_coords)
     si.run()  # Run the SVD alignment
 
-    return si
+    if not ((resi_start is None) and (resi_end is None)):
+        rmsd_spec = rmsd_specific(template_coords, mobile_coords, resi_start, resi_end, si.rot, si.tran)
+    else:
+        rmsd_spec = None
+
+    return [si, rmsd_spec]
 
 
 #################
 # Distance matrix
 #################
 
-distance_matrix = np.empty((numEntries, numEntries))
-distance_matrix_specific = distance_matrix
+distance_matrix_global = np.empty((numEntries, numEntries))
+distance_matrix_specific = np.empty((numEntries, numEntries))
 
 for row in range(numEntries):
     if np.ma.getmask(pdbEntries[row, 1]):
@@ -147,28 +157,37 @@ for row in range(numEntries):
         else:
             mobileStruc = p.get_structure("mobileStruc", f"pdbFiles/{pdbEntries[column, 0]}.pdb")[0][
                 pdbEntries[column, 1]]
-        align_structures = align(templateStruc, mobileStruc)
-        distance_matrix[row, column] = align_structures.get_rms()
+        global_alignment, specificRMSD = align(templateStruc, mobileStruc, 9, 24)
+        distance_matrix_global[row, column] = global_alignment.get_rms()
+        distance_matrix_specific[row, column] = specificRMSD
     print(f"Alignment {100 * (row + 1) // numEntries} % complete. Starting iteration {row + 2}.")
 
-print(distance_matrix.reshape(np.ma.shape(pdbEntries)[0], np.ma.shape(pdbEntries)[0]))
-np.savetxt(fname="distance_matrix.csv", X=distance_matrix, delimiter=",")
+print(distance_matrix_global.reshape(np.ma.shape(pdbEntries)[0], np.ma.shape(pdbEntries)[0]))
+np.savetxt(fname="distance_matrix_global.csv", X=distance_matrix_global, delimiter=",")
+print(distance_matrix_specific.reshape(np.ma.shape(pdbEntries)[0], np.ma.shape(pdbEntries)[0]))
+np.savetxt(fname="distance_matrix_specific.csv", X=distance_matrix_specific, delimiter=",")
 
-##########################################################
-# Hierarchical Clustering from Distance Matrix (SciPy)
-##########################################################
+##############################################
+# Hierarchical Clustering from Distance Matrix
+##############################################
 
 # Must condense the matrix for linkage() to read. checks=False because the matrix is essentially symmetrical and the
 # diagonal elements are essentially zero.
 
-distance_matrix_condensed = squareform(distance_matrix, checks=False)
+distance_matrix_global_condensed = squareform(distance_matrix_global, checks=False)
+distance_matrix_specific_condensed = squareform(distance_matrix_specific, checks=False)
 
 # perform the hierarchical clustering using the average-linkage method
 
-globalRMSDTreeSciPy = linkage(distance_matrix_condensed, "average", optimal_ordering=True)
+globalRMSDTree = linkage(distance_matrix_global_condensed, "average", optimal_ordering=True)
+specificRMSDTree = linkage(distance_matrix_specific_condensed, "average", optimal_ordering=True)
 
 # generate the dendrogram using the matplotlib package's pyplot module
 
-fig = plt.figure(figsize=(25, 10))
-dn = dendrogram(globalRMSDTreeSciPy, labels=structureList)
+global_fig = plt.figure(figsize=(25, 10))
+global_dn = dendrogram(globalRMSDTree, labels=structureList)
+
+specific_fig = plt.figure(figsize=(25, 10))
+specific_dn = dendrogram(specificRMSDTree, labels=structureList)
+
 plt.show()
