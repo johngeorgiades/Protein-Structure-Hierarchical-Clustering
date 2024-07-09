@@ -96,7 +96,9 @@ def rmsd_specific(template_coords, mobile_coords, rot, tran):
 # alignment function
 
 
-def align(template: Structure, mobile: Structure, atom_types="CA") -> SVDSuperimposer:
+# alignment function
+
+def align(template: Structure, mobile: Structure, atom_type="CA") -> SVDSuperimposer:
     """Aligns a mobile structure onto a template structure using the atom types listed in 'atom_types'."""
 
     # A long one-liner that gets the one-letter amino acid representation for each residue in a structure,
@@ -115,9 +117,9 @@ def align(template: Structure, mobile: Structure, atom_types="CA") -> SVDSuperim
     # and the atom type is what's specified in atom_types.
 
     template_coords = [a.get_coord() for a in template.get_atoms() if
-                       is_aa(a.parent.get_resname()) and a.get_id() in atom_types]
+                       is_aa(a.parent.get_resname()) and a.get_id() == atom_type]
     mobile_coords = [a.get_coord() for a in mobile.get_atoms() if
-                     is_aa(a.parent.get_resname()) and a.get_id() in atom_types]
+                     is_aa(a.parent.get_resname()) and a.get_id() == atom_type]
 
     si = SVDSuperimposer()
     si.set(np.array(template_coords), np.array(mobile_coords))
