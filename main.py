@@ -185,9 +185,9 @@ specificRMSDTree = linkage(distance_matrix_specific_condensed, "average", optima
 # generate the dendrogram using the matplotlib package's pyplot module
 
 global_fig = plt.figure(figsize=(25, 10))
-global_dn = dendrogram(globalRMSDTree, labels=structureList)
+global_dn = dendrogram(globalRMSDTree, orientation="left", labels=structureList)
 
 specific_fig = plt.figure(figsize=(25, 10))
-specific_dn = dendrogram(specificRMSDTree, labels=structureList)
+specific_dn = dendrogram(specificRMSDTree, orientation="left", labels=structureList)
 
 plt.show()
