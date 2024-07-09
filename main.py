@@ -81,7 +81,7 @@ for struc in range(numEntries):
 p = PDBParser(QUIET=True)
 
 
-def align(template: Structure, mobile: Structure, atom_types=["CA"]) -> SVDSuperimposer:
+def align(template: Structure, mobile: Structure, atom_types="CA") -> SVDSuperimposer:
     """Aligns a mobile structure onto a template structure using the atom types listed in 'atom_types'."""
 
     # A long one-liner that gets the one-letter amino acid representation for each residue in a structure,
