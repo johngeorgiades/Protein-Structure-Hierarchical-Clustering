@@ -83,6 +83,18 @@ for struc in range(numEntries):
 ###########
 p = PDBParser(QUIET=True)
 
+# RMSD calculation for a specific region
+
+
+def rmsd_specific(template_coords, mobile_coords, rot, tran):
+    mobile_coords_rotated = np.dot(mobile_coords, rot) + tran
+    diff = template_coords - mobile_coords_rotated
+    rmsd_spec = np.sqrt(sum(sum(diff ** 2)) / template_coords.shape[0])
+    return rmsd_spec
+
+
+# alignment function
+
 
 def align(template: Structure, mobile: Structure, atom_types="CA") -> SVDSuperimposer:
     """Aligns a mobile structure onto a template structure using the atom types listed in 'atom_types'."""
@@ -119,6 +131,7 @@ def align(template: Structure, mobile: Structure, atom_types="CA") -> SVDSuperim
 #################
 
 distance_matrix = np.empty((numEntries, numEntries))
+distance_matrix_specific = distance_matrix
 
 for row in range(numEntries):
     if np.ma.getmask(pdbEntries[row, 1]):
