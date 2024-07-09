@@ -134,4 +134,4 @@ for row in range(numEntries):
     print(f"Alignment {100 * (row + 1) // numEntries} % complete. Starting iteration {row + 2}.")
 
 print(distance_matrix.reshape(np.ma.shape(pdbEntries)[0], np.ma.shape(pdbEntries)[0]))
-np.savetxt(fname="distance_matrix", X=distance_matrix, delimiter=",")
+np.savetxt(fname="distance_matrix.csv", X=distance_matrix, delimiter=",")
