@@ -8,7 +8,9 @@ from Bio.PDB.Polypeptide import is_aa
 from Bio.PDB.Structure import Structure
 from Bio.SVDSuperimposer import SVDSuperimposer
 from Bio import Cluster
-
+from scipy.cluster.hierarchy import dendrogram, linkage  # use for scipy clustering + visualization
+from scipy.spatial.distance import squareform  # use to convert redundant distance matrix to condensed distance matrix
+from matplotlib import pyplot as plt  # use to plot the scipy dendrogram
 ####################################
 # Import structures file as an array
 ####################################
@@ -137,9 +139,9 @@ for row in range(numEntries):
 print(distance_matrix.reshape(np.ma.shape(pdbEntries)[0], np.ma.shape(pdbEntries)[0]))
 np.savetxt(fname="distance_matrix", X=distance_matrix, delimiter=",")
 
-##############################################
-# Hierarchical Clustering from Distance Matrix
-##############################################
+##########################################################
+# Hierarchical Clustering from Distance Matrix (BioPython)
+##########################################################
 
 # Cluster.treecluster() may shuffle data in the distance matrix, so it will be fed a duplicate.
 
@@ -148,3 +150,15 @@ distance_matrix_duplicate = distance_matrix
 globalRMSDTree = Cluster.treecluster(data=None, distancematrix=distance_matrix_duplicate, method="a")  # unsorted
 
 print(globalRMSDTree)
+
+##########################################################
+# Hierarchical Clustering from Distance Matrix (SciPy)
+##########################################################
+
+distance_matrix_condensed = squareform(distance_matrix, checks=False)  # Must condense the matrix for linkage() to read
+
+globalRMSDTreeSciPy = linkage(distance_matrix_condensed, "average", optimal_ordering=True)
+
+fig = plt.figure(figsize=(25, 10))
+dn = dendrogram(globalRMSDTreeSciPy)
+plt.show()
