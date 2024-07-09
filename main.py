@@ -83,8 +83,19 @@ for struc in range(numEntries):
 ###########
 p = PDBParser(QUIET=True)
 
+# RMSD calculation for a specific region
 
-def align(template: Structure, mobile: Structure, atom_types="CA") -> SVDSuperimposer:
+
+def rmsd(template_coords, mobile_coords, rot, tran):
+    mobile_coords_rotated = np.dot(mobile_coords, rot) + tran
+    diff = template_coords - mobile_coords_rotated
+    rmsd_specific = np.sqrt(sum(sum(diff**2))/template_coords.shape[0])
+    return rmsd_specific
+
+
+# alignment function
+
+def align(template: Structure, mobile: Structure, atom_type="CA") -> SVDSuperimposer:
     """Aligns a mobile structure onto a template structure using the atom types listed in 'atom_types'."""
 
     # A long one-liner that gets the one-letter amino acid representation for each residue in a structure,
@@ -103,9 +114,9 @@ def align(template: Structure, mobile: Structure, atom_types="CA") -> SVDSuperim
     # and the atom type is what's specified in atom_types.
 
     template_coords = [a.get_coord() for a in template.get_atoms() if
-                       is_aa(a.parent.get_resname()) and a.get_id() in atom_types]
+                       is_aa(a.parent.get_resname()) and a.get_id() == atom_type]
     mobile_coords = [a.get_coord() for a in mobile.get_atoms() if
-                     is_aa(a.parent.get_resname()) and a.get_id() in atom_types]
+                     is_aa(a.parent.get_resname()) and a.get_id() == atom_type]
 
     si = SVDSuperimposer()
     si.set(np.array(template_coords), np.array(mobile_coords))
@@ -119,6 +130,7 @@ def align(template: Structure, mobile: Structure, atom_types="CA") -> SVDSuperim
 #################
 
 distance_matrix = np.empty((numEntries, numEntries))
+distance_matrix_specific = distance_matrix
 
 for row in range(numEntries):
     if np.ma.getmask(pdbEntries[row, 1]):
