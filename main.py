@@ -1,6 +1,8 @@
 import os
 import sys
+import time
 import urllib.request
+import math
 
 import numpy as np
 from Bio.PDB.PDBParser import PDBParser
@@ -146,6 +148,7 @@ distance_matrix_global = np.empty((numEntries, numEntries))
 distance_matrix_specific = np.empty((numEntries, numEntries))
 
 for row in range(numEntries):
+    start = time.time()
     if np.ma.getmask(pdbEntries[row, 1]):
         templateStruc = p.get_structure("templateStruc", f"pdbFiles/{pdbEntries[row, 0]}.pdb")[0]["A"]
     else:
@@ -160,7 +163,12 @@ for row in range(numEntries):
         global_alignment, specificRMSD = align(templateStruc, mobileStruc, 9, 24)
         distance_matrix_global[row, column] = global_alignment.get_rms()
         distance_matrix_specific[row, column] = specificRMSD
-    print(f"Alignment {100 * (row + 1) // numEntries} % complete. Starting iteration {row + 2}.")
+    end = time.time()
+    elapsed = end - start
+    remainingMin = elapsed * (numEntries - row + 1) // 60
+    remainingSec = elapsed * (numEntries - row + 1) % 60
+    print(f"Alignment {100 * (row + 1) // numEntries} % complete. Completed row {row + 1} in {elapsed} seconds. "
+          f"Estimated time to completion: {math.floor(remainingMin)} minutes {math.floor(remainingSec)} seconds.")
 
 print(distance_matrix_global.reshape(np.ma.shape(pdbEntries)[0], np.ma.shape(pdbEntries)[0]))
 np.savetxt(fname="distance_matrix_global.csv", X=distance_matrix_global, delimiter=",")
