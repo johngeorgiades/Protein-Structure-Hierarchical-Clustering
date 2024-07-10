@@ -171,13 +171,30 @@ for row in range(numEntries):
           f"Estimated time to completion: {math.floor(remainingMin)} minutes {math.floor(remainingSec)} seconds.")
 
 print(distance_matrix_global.reshape(np.ma.shape(pdbEntries)[0], np.ma.shape(pdbEntries)[0]))
-np.savetxt(fname="distance_matrix_global.csv", X=distance_matrix_global, delimiter=",")
 print(distance_matrix_specific.reshape(np.ma.shape(pdbEntries)[0], np.ma.shape(pdbEntries)[0]))
-np.savetxt(fname="distance_matrix_specific.csv", X=distance_matrix_specific, delimiter=",")
+
+# Check if the /distance_matrices folder exists in the current directory. If not, create it.
+
+distance_matrices_FileDir = "./distance_matrices"
+
+if not os.path.exists(distance_matrices_FileDir):
+    os.makedirs(distance_matrices_FileDir)
+    print("Created file directory " + distance_matrices_FileDir)
+
+np.savetxt(fname="./distance_matrices/distance_matrix_global.csv", X=distance_matrix_global, delimiter=",")
+np.save("./distance_matrices/distance_matrix_global", distance_matrix_global)
+
+np.savetxt(fname="./distance_matrices/distance_matrix_specific.csv", X=distance_matrix_specific, delimiter=",")
+np.save("./distance_matrices/distance_matrix_specific", distance_matrix_specific)
+
 
 ##############################################
 # Hierarchical Clustering from Distance Matrix
 ##############################################
+
+# Load the matrices from saved files
+# distance_matrix_global = np.load("./distance_matrices/distance_matrix_global.npy")
+# distance_matrix_specific = np.load('./distance_matrices/distance_matrix_specific.npy')
 
 # Must condense the matrix for linkage() to read. checks=False because the matrix is essentially symmetrical and the
 # diagonal elements are essentially zero.
@@ -190,12 +207,21 @@ distance_matrix_specific_condensed = squareform(distance_matrix_specific, checks
 globalRMSDTree = linkage(distance_matrix_global_condensed, "average", optimal_ordering=True)
 specificRMSDTree = linkage(distance_matrix_specific_condensed, "average", optimal_ordering=True)
 
+# Check if the /dendrograms folder exists in the current directory. If not, create it.
+
+dendrogramsFileDir = "./dendrograms"
+
+if not os.path.exists(dendrogramsFileDir):
+    os.makedirs(dendrogramsFileDir)
+    print("Created file directory " + dendrogramsFileDir)
+
+
 # generate the dendrogram using the matplotlib package's pyplot module
 
 globalRMSD_fig = plt.figure(figsize=(6.5, 10), dpi=600)
 global_dn = dendrogram(globalRMSDTree, orientation="left", labels=structureList)
-plt.savefig(fname="globalRMSDTree.pdf")
+plt.savefig(fname="./dendrograms/globalRMSDTree.pdf")
 
 specificRMSD_fig = plt.figure(figsize=(6.5, 10), dpi=600)
 specific_dn = dendrogram(specificRMSDTree, orientation="left", labels=structureList)
-plt.savefig(fname="specificRMSDTree.pdf")
+plt.savefig(fname="./dendrograms/specificRMSDTree.pdf")
