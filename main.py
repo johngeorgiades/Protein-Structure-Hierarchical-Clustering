@@ -147,45 +147,53 @@ def align(template: Structure, mobile: Structure, resi_start=None, resi_end=None
 distance_matrix_global = np.empty((numEntries, numEntries))
 distance_matrix_specific = np.empty((numEntries, numEntries))
 
-for row in range(numEntries):
-    start = time.time()
-    if np.ma.getmask(pdbEntries[row, 1]):
-        templateStruc = p.get_structure("templateStruc", f"pdbFiles/{pdbEntries[row, 0]}.pdb")[0]["A"]
-    else:
-        templateStruc = p.get_structure("templateStruc", f"pdbFiles/{pdbEntries[row, 0]}.pdb")[0][
-            pdbEntries[row, 1]]
-    for column in range(numEntries):
-        if np.ma.getmask(pdbEntries[column, 1]):
-            mobileStruc = p.get_structure("mobileStruc", f"pdbFiles/{pdbEntries[column, 0]}.pdb")[0]["A"]
+if not (os.path.exists("./distance_matrices/distance_matrix_global.csv")
+        or os.path.exists("./distance_matrices/distance_matrix_global.npy")
+        or os.path.exists("./distance_matrices/distance_matrix_specific.csv")
+        or os.path.exists("./distance_matrices/distance_matrix_specific.npy")):
+    for row in range(numEntries):
+        start = time.time()
+        if np.ma.getmask(pdbEntries[row, 1]):
+            templateStruc = p.get_structure("templateStruc", f"pdbFiles/{pdbEntries[row, 0]}.pdb")[0]["A"]
         else:
-            mobileStruc = p.get_structure("mobileStruc", f"pdbFiles/{pdbEntries[column, 0]}.pdb")[0][
-                pdbEntries[column, 1]]
-        global_alignment, specificRMSD = align(templateStruc, mobileStruc, 9, 24)
-        distance_matrix_global[row, column] = global_alignment.get_rms()
-        distance_matrix_specific[row, column] = specificRMSD
-    end = time.time()
-    elapsed = end - start
-    remainingMin = elapsed * (numEntries - row + 1) // 60
-    remainingSec = elapsed * (numEntries - row + 1) % 60
-    print(f"Alignment {100 * (row + 1) // numEntries} % complete. Completed row {row + 1} in {elapsed} seconds. "
-          f"Estimated time to completion: {math.floor(remainingMin)} minutes {math.floor(remainingSec)} seconds.")
+            templateStruc = p.get_structure("templateStruc", f"pdbFiles/{pdbEntries[row, 0]}.pdb")[0][
+                pdbEntries[row, 1]]
+        for column in range(numEntries):
+            if np.ma.getmask(pdbEntries[column, 1]):
+                mobileStruc = p.get_structure("mobileStruc", f"pdbFiles/{pdbEntries[column, 0]}.pdb")[0]["A"]
+            else:
+                mobileStruc = p.get_structure("mobileStruc", f"pdbFiles/{pdbEntries[column, 0]}.pdb")[0][
+                    pdbEntries[column, 1]]
+            global_alignment, specificRMSD = align(templateStruc, mobileStruc, 9, 24)
+            distance_matrix_global[row, column] = global_alignment.get_rms()
+            distance_matrix_specific[row, column] = specificRMSD
+        end = time.time()
+        elapsed = end - start
+        remainingMin = elapsed * (numEntries - row + 1) // 60
+        remainingSec = elapsed * (numEntries - row + 1) % 60
+        print(f"Alignment {100 * (row + 1) // numEntries} % complete. Completed row {row + 1} in {elapsed} seconds. "
+              f"Estimated time to completion: {math.floor(remainingMin)} minutes {math.floor(remainingSec)} seconds.")
 
-print(distance_matrix_global.reshape(np.ma.shape(pdbEntries)[0], np.ma.shape(pdbEntries)[0]))
-print(distance_matrix_specific.reshape(np.ma.shape(pdbEntries)[0], np.ma.shape(pdbEntries)[0]))
+    print(distance_matrix_global.reshape(np.ma.shape(pdbEntries)[0], np.ma.shape(pdbEntries)[0]))
+    print(distance_matrix_specific.reshape(np.ma.shape(pdbEntries)[0], np.ma.shape(pdbEntries)[0]))
 
-# Check if the /distance_matrices folder exists in the current directory. If not, create it.
+    # Check if the /distance_matrices folder exists in the current directory. If not, create it.
 
-distance_matrices_FileDir = "./distance_matrices"
+    distance_matrices_FileDir = "./distance_matrices"
 
-if not os.path.exists(distance_matrices_FileDir):
-    os.makedirs(distance_matrices_FileDir)
-    print("Created file directory " + distance_matrices_FileDir)
+    if not os.path.exists(distance_matrices_FileDir):
+        os.makedirs(distance_matrices_FileDir)
+        print("Created file directory " + distance_matrices_FileDir)
 
-np.savetxt(fname="./distance_matrices/distance_matrix_global.csv", X=distance_matrix_global, delimiter=",")
-np.save("./distance_matrices/distance_matrix_global", distance_matrix_global)
+    np.savetxt(fname="./distance_matrices/distance_matrix_global.csv", X=distance_matrix_global, delimiter=",")
+    np.save("./distance_matrices/distance_matrix_global.npy", distance_matrix_global)
 
-np.savetxt(fname="./distance_matrices/distance_matrix_specific.csv", X=distance_matrix_specific, delimiter=",")
-np.save("./distance_matrices/distance_matrix_specific", distance_matrix_specific)
+    np.savetxt(fname="./distance_matrices/distance_matrix_specific.csv", X=distance_matrix_specific, delimiter=",")
+    np.save("./distance_matrices/distance_matrix_specific.npy", distance_matrix_specific)
+    distance_matrix_ran = True
+else:
+    print("No distance matrix was calculated because there is already a distance matrix in ./distance_matrices")
+    distance_matrix_ran = False
 
 
 ##############################################
@@ -193,8 +201,10 @@ np.save("./distance_matrices/distance_matrix_specific", distance_matrix_specific
 ##############################################
 
 # Load the matrices from saved files
-# distance_matrix_global = np.load("./distance_matrices/distance_matrix_global.npy")
-# distance_matrix_specific = np.load('./distance_matrices/distance_matrix_specific.npy')
+
+if not distance_matrix_ran:
+    distance_matrix_global = np.load("./distance_matrices/distance_matrix_global.npy")
+    distance_matrix_specific = np.load('./distance_matrices/distance_matrix_specific.npy')
 
 # Must condense the matrix for linkage() to read. checks=False because the matrix is essentially symmetrical and the
 # diagonal elements are essentially zero.
