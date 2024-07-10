@@ -21,7 +21,7 @@ from matplotlib import pyplot as plt  # use to plot the scipy dendrogram
 # the chain identifier. Entries that do not have a chain identifier only have one chain. LIST HAS BEEN FILTERED TO
 # REMOVE ENTRIES WITH NON-IDENTICAL SEQUENCES. GOAL WOULD BE TO INCLUDE THOSE SOMEHOW, BUT CURRENT CODE CANNOT DO THAT
 
-pdbEntries = np.genfromtxt("pdbEntriesFiltered.csv", dtype=str, encoding="utf-8-sig", delimiter=",", usemask=True)
+pdbEntries = np.genfromtxt("pdbEntriesNew.csv", dtype=str, encoding="utf-8-sig", delimiter=",", usemask=True)
 numEntries = np.ma.shape(pdbEntries)[0]
 
 # Make a list (actually, a numpy array) that has the PDB code (+ chain id if there is one) for each structure
@@ -93,7 +93,7 @@ def rmsd_specific(template_coords, mobile_coords, resi_start: int, resi_end: int
     """Calculates the RMSD between two protein atom coordinate sets 'template_coords' and 'mobile_coords' for a
     specific region of the amino acid sequence between 'resi_start' and 'resi_end'. """
     s = resi_start - 1
-    e = resi_end
+    e = resi_end  # This is not - 1 because slicing does not include the last referenced number.
     template_coords_specific = template_coords[s:e]
     mobile_coords_rotated = np.dot(mobile_coords, rot) + tran
     mobile_coords_rotated_specific = mobile_coords_rotated[s:e]
@@ -104,36 +104,38 @@ def rmsd_specific(template_coords, mobile_coords, resi_start: int, resi_end: int
 
 # alignment function
 
-def align(template: Structure, mobile: Structure, resi_start=None, resi_end=None, atom_type="CA") -> list:
+def align(template: Structure,
+          mobile: Structure,
+          align_resi_start=None,
+          align_resi_end=None,
+          rmsd_resi_start=None,
+          rmsd_resi_end=None,
+          atom_type="CA") -> list:
     """Aligns a mobile structure onto a template structure using the atom types listed in 'atom_types' and calculates
     the RMSD for a specific region of that alignment."""
 
-    # A long one-liner that gets the one-letter amino acid representation for each residue in a structure,
-    # then joins those letters into one long string.
-
-    template_seq = "".join([r.get_resname()
-                            for r in template.get_residues() if is_aa(r)])
-    mobile_seq = "".join([r.get_resname()
-                          for r in mobile.get_residues() if is_aa(r)])
-
-    # Check if identical sequences. Throw error if not (since atom coordinates won't work).
-
-    assert len(mobile_seq) == len(template_seq), "The sequences should be of identical length."
-
     # Get the coordinates of the Atom object if the Atom is from an amino acid residue,
-    # and the atom type is what's specified in atom_types.
+    # and the atom type is what's specified in atom_types. Known modified / non-canonical amino acids are supported.
 
     template_coords = np.array([a.get_coord() for a in template.get_atoms() if
                                 is_aa(a.parent.get_resname()) and a.get_id() == atom_type])
     mobile_coords = np.array([a.get_coord() for a in mobile.get_atoms() if
                               is_aa(a.parent.get_resname()) and a.get_id() == atom_type])
+    if align_resi_start is None:
+        a = None
+    else:
+        a = align_resi_start - 1
+    if align_resi_end is None:
+        b = None
+    else:
+        b = align_resi_end  # This is not - 1 because slicing does not include the last referenced number.
 
     si = SVDSuperimposer()
-    si.set(template_coords, mobile_coords)
+    si.set(template_coords[a:b], mobile_coords[a:b])
     si.run()  # Run the SVD alignment
 
-    if not ((resi_start is None) and (resi_end is None)):
-        rmsd_spec = rmsd_specific(template_coords, mobile_coords, resi_start, resi_end, si.rot, si.tran)
+    if not ((rmsd_resi_start is None) and (rmsd_resi_end is None)):
+        rmsd_spec = rmsd_specific(template_coords, mobile_coords, rmsd_resi_start, rmsd_resi_end, si.rot, si.tran)
     else:
         rmsd_spec = None
 
@@ -159,12 +161,18 @@ if not (os.path.exists("./distance_matrices/distance_matrix_global.csv")
             templateStruc = p.get_structure("templateStruc", f"pdbFiles/{pdbEntries[row, 0]}.pdb")[0][
                 pdbEntries[row, 1]]
         for column in range(numEntries):
+            # print(f"Starting column {column}.")
             if np.ma.getmask(pdbEntries[column, 1]):
                 mobileStruc = p.get_structure("mobileStruc", f"pdbFiles/{pdbEntries[column, 0]}.pdb")[0]["A"]
             else:
                 mobileStruc = p.get_structure("mobileStruc", f"pdbFiles/{pdbEntries[column, 0]}.pdb")[0][
                     pdbEntries[column, 1]]
-            global_alignment, specificRMSD = align(templateStruc, mobileStruc, 9, 24)
+            global_alignment, specificRMSD = align(templateStruc,
+                                                   mobileStruc,
+                                                   align_resi_start=1,
+                                                   align_resi_end=159,
+                                                   rmsd_resi_start=9,
+                                                   rmsd_resi_end=24)
             distance_matrix_global[row, column] = global_alignment.get_rms()
             distance_matrix_specific[row, column] = specificRMSD
         end = time.time()
@@ -190,6 +198,9 @@ if not (os.path.exists("./distance_matrices/distance_matrix_global.csv")
 
     np.savetxt(fname="./distance_matrices/distance_matrix_specific.csv", X=distance_matrix_specific, delimiter=",")
     np.save("./distance_matrices/distance_matrix_specific.npy", distance_matrix_specific)
+
+    print(f"Distance matrix generated for the alignment of {numEntries} structures.")
+
     distance_matrix_ran = True
 else:
     print("No distance matrix was calculated because there is already a distance matrix in ./distance_matrices")
@@ -226,7 +237,7 @@ if not os.path.exists(dendrogramsFileDir):
     print("Created file directory " + dendrogramsFileDir)
 
 
-# generate the dendrogram using the matplotlib package's pyplot module
+# generate the dendrogram using the matplotlib package's pyplot module (overwrites any current files)
 
 globalRMSD_fig = plt.figure(figsize=(6.5, 10), dpi=600)
 global_dn = dendrogram(globalRMSDTree, color_threshold=0, orientation="left", labels=structureList, leaf_font_size=3,
@@ -240,3 +251,5 @@ specific_dn = dendrogram(specificRMSDTree, color_threshold=0, orientation="left"
 plt.xlabel("RMSD (Å)")
 
 plt.savefig(fname="./dendrograms/specificRMSDTree.pdf")
+
+print(f"Hierarchical clustering performed and dendrograms generated for the alignment of {numEntries} structures.")
