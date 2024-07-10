@@ -229,9 +229,11 @@ if not os.path.exists(dendrogramsFileDir):
 # generate the dendrogram using the matplotlib package's pyplot module
 
 globalRMSD_fig = plt.figure(figsize=(6.5, 10), dpi=600)
-global_dn = dendrogram(globalRMSDTree, orientation="left", labels=structureList)
+global_dn = dendrogram(globalRMSDTree, color_threshold=0, orientation="left", labels=structureList, leaf_font_size=3,
+                       above_threshold_color="k")
 plt.savefig(fname="./dendrograms/globalRMSDTree.pdf")
 
 specificRMSD_fig = plt.figure(figsize=(6.5, 10), dpi=600)
-specific_dn = dendrogram(specificRMSDTree, orientation="left", labels=structureList)
+specific_dn = dendrogram(specificRMSDTree, color_threshold=0, orientation="left", labels=structureList,
+                         leaf_font_size=3, above_threshold_color="k")
 plt.savefig(fname="./dendrograms/specificRMSDTree.pdf")
