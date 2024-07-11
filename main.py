@@ -21,7 +21,12 @@ from scipy.spatial.distance import squareform  # use to convert redundant distan
 # the chain identifier. Entries that do not have a chain identifier only have one chain. LIST HAS BEEN FILTERED TO
 # REMOVE ENTRIES WITH NON-IDENTICAL SEQUENCES. GOAL WOULD BE TO INCLUDE THOSE SOMEHOW, BUT CURRENT CODE CANNOT DO THAT
 
-pdbEntries = np.genfromtxt("pdbEntriesNew.csv", dtype=str, encoding="utf-8-sig", delimiter=",", usemask=True)
+assert os.path.exists("./pdbEntries.csv"), ("The pdbEntries.csv file is missing from the root directory. Please add a "
+                                            ".csv file that includes a list of PDB codes in column A and (optional) "
+                                            "chains in column B that correspond to the PDB codes in column A. Each row "
+                                            "will be read as an entry.")
+
+pdbEntries = np.genfromtxt("pdbEntries.csv", dtype=str, encoding="utf-8-sig", delimiter=",", usemask=True)
 numEntries = np.ma.shape(pdbEntries)[0]
 
 # Make a list (actually, a numpy array) that has the PDB code (+ chain id if there is one) for each structure

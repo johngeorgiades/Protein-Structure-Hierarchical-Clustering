@@ -1,0 +1,6 @@
+/.idea/
+/.venv/
+/dendrograms/
+/distance_matrices/
+/pdbFiles/
+/pdbEntries.csv
