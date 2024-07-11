@@ -240,13 +240,13 @@ if not os.path.exists(dendrogramsFileDir):
 globalRMSD_fig = plt.figure(figsize=(6.5, 10), dpi=600)
 global_dn = dendrogram(globalRMSDTree, color_threshold=0, orientation="left", labels=structureList, leaf_font_size=3,
                        above_threshold_color="k")
-plt.xlabel("RMSD (Å)")
+plt.xlabel("RMSD (Å) of Full-Length EcDHFR (Residues 1 to 159)")
 plt.savefig(fname="./dendrograms/globalRMSDTree.pdf")
 
 specificRMSD_fig = plt.figure(figsize=(6.5, 10), dpi=600)
 specific_dn = dendrogram(specificRMSDTree, color_threshold=0, orientation="left", labels=structureList,
                          leaf_font_size=3, above_threshold_color="k")
-plt.xlabel("RMSD (Å)")
+plt.xlabel("RMSD (Å) of the Met20 Loop (Residues 9 to 24)")
 
 plt.savefig(fname="./dendrograms/specificRMSDTree.pdf")
 
