@@ -1,17 +1,17 @@
+import math
 import os
 import sys
 import time
 import urllib.request
-import math
 
 import numpy as np
 from Bio.PDB.PDBParser import PDBParser
 from Bio.PDB.Polypeptide import is_aa
 from Bio.PDB.Structure import Structure
 from Bio.SVDSuperimposer import SVDSuperimposer
+from matplotlib import pyplot as plt  # use to plot the scipy dendrogram
 from scipy.cluster.hierarchy import dendrogram, linkage  # use for scipy clustering + visualization
 from scipy.spatial.distance import squareform  # use to convert redundant distance matrix to condensed distance matrix
-from matplotlib import pyplot as plt  # use to plot the scipy dendrogram
 
 ####################################
 # Import structures file as an array
@@ -206,7 +206,6 @@ else:
     print("No distance matrix was calculated because there is already a distance matrix in ./distance_matrices")
     distance_matrix_ran = False
 
-
 ##############################################
 # Hierarchical Clustering from Distance Matrix
 ##############################################
@@ -235,7 +234,6 @@ dendrogramsFileDir = "./dendrograms"
 if not os.path.exists(dendrogramsFileDir):
     os.makedirs(dendrogramsFileDir)
     print("Created file directory " + dendrogramsFileDir)
-
 
 # generate the dendrogram using the matplotlib package's pyplot module (overwrites any current files)
 
