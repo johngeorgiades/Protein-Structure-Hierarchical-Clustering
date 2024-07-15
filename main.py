@@ -82,6 +82,10 @@ if not os.path.exists(pdbFileDir):
     os.makedirs(pdbFileDir)
     print("Created file directory " + pdbFileDir)
 
+# Download the pdbEntries into the pdbFileDir
+# NOTE: if you want to include a local .pdb file, simply move it to the ./pdbFiles folder AND include it in your
+# pdbEntires.csv file with the IDENTICAL name as the .pdb file.
+
 for struc in range(numEntries):
     download_pdb(pdbEntries[struc, 0], pdbFileDir)
 
@@ -109,6 +113,7 @@ def rmsd_specific(template_coords, mobile_coords, resi_start: int, resi_end: int
 
 # alignment function
 
+
 def align(template: Structure,
           mobile: Structure,
           align_resi_start=None,
@@ -126,6 +131,10 @@ def align(template: Structure,
                                 is_aa(a.parent.get_resname()) and a.get_id() == atom_type])
     mobile_coords = np.array([a.get_coord() for a in mobile.get_atoms() if
                               is_aa(a.parent.get_resname()) and a.get_id() == atom_type])
+
+    # Determine if alignment is global or a small region of the enzyme. If you have sequences that include things at N
+    # or C term, there might be coordinates in there you don't want to consider.
+
     if align_resi_start is None:
         a = None
     else:
@@ -135,9 +144,13 @@ def align(template: Structure,
     else:
         b = align_resi_end  # This is not - 1 because slicing does not include the last referenced number.
 
+    # Set up alignment
+
     si = SVDSuperimposer()
     si.set(template_coords[a:b], mobile_coords[a:b])
     si.run()  # Run the SVD alignment
+
+    # Determine if going to calculate the rmsd for a specific region of the protein.
 
     if not ((rmsd_resi_start is None) and (rmsd_resi_end is None)):
         rmsd_spec = rmsd_specific(template_coords, mobile_coords, rmsd_resi_start, rmsd_resi_end, si.rot, si.tran)
@@ -151,8 +164,13 @@ def align(template: Structure,
 # Distance matrix
 #################
 
+# Set up distance matrix arrays
+
 distance_matrix_global = np.empty((numEntries, numEntries))
 distance_matrix_specific = np.empty((numEntries, numEntries))
+
+# Make the distance matrix by iterating through each row / column, performing the alignment, and recording the
+# respective rmsd. If any distance matrix exists in the ./distance_matrices directory, this will be skipped.
 
 if not (os.path.exists("./distance_matrices/distance_matrix_global.csv")
         or os.path.exists("./distance_matrices/distance_matrix_global.npy")
@@ -166,7 +184,6 @@ if not (os.path.exists("./distance_matrices/distance_matrix_global.csv")
             templateStruc = p.get_structure("templateStruc", f"pdbFiles/{pdbEntries[row, 0]}.pdb")[0][
                 pdbEntries[row, 1]]
         for column in range(numEntries):
-            # print(f"Starting column {column}.")
             if np.ma.getmask(pdbEntries[column, 1]):
                 mobileStruc = p.get_structure("mobileStruc", f"pdbFiles/{pdbEntries[column, 0]}.pdb")[0]["A"]
             else:
@@ -187,8 +204,8 @@ if not (os.path.exists("./distance_matrices/distance_matrix_global.csv")
         print(f"Alignment {100 * (row + 1) // numEntries} % complete. Completed row {row + 1} in {elapsed} seconds. "
               f"Estimated time to completion: {math.floor(remainingMin)} minutes {math.floor(remainingSec)} seconds.")
 
-    print(distance_matrix_global.reshape(np.ma.shape(pdbEntries)[0], np.ma.shape(pdbEntries)[0]))
-    print(distance_matrix_specific.reshape(np.ma.shape(pdbEntries)[0], np.ma.shape(pdbEntries)[0]))
+    # print(distance_matrix_global.reshape(np.ma.shape(pdbEntries)[0], np.ma.shape(pdbEntries)[0]))
+    # print(distance_matrix_specific.reshape(np.ma.shape(pdbEntries)[0], np.ma.shape(pdbEntries)[0]))
 
     # Check if the /distance_matrices folder exists in the current directory. If not, create it.
 
@@ -197,6 +214,8 @@ if not (os.path.exists("./distance_matrices/distance_matrix_global.csv")
     if not os.path.exists(distance_matrices_FileDir):
         os.makedirs(distance_matrices_FileDir)
         print("Created file directory " + distance_matrices_FileDir)
+
+    # Save .csv and .npy files of the distance matrices.
 
     np.savetxt(fname="./distance_matrices/distance_matrix_global.csv", X=distance_matrix_global, delimiter=",")
     np.save("./distance_matrices/distance_matrix_global.npy", distance_matrix_global)
@@ -215,7 +234,7 @@ else:
 # Hierarchical Clustering from Distance Matrix
 ##############################################
 
-# Load the matrices from saved files
+# Load the distance matrices from saved files in the ./distance_matrices folder
 
 if not distance_matrix_ran:
     distance_matrix_global = np.load("./distance_matrices/distance_matrix_global.npy")
@@ -240,7 +259,7 @@ if not os.path.exists(dendrogramsFileDir):
     os.makedirs(dendrogramsFileDir)
     print("Created file directory " + dendrogramsFileDir)
 
-# generate the dendrogram using the matplotlib package's pyplot module (overwrites any current files)
+# generate the dendrograms using the matplotlib package's pyplot module (overwrites any current files)
 
 globalRMSD_fig = plt.figure(figsize=(6.5, 10), dpi=600)
 global_dn = dendrogram(globalRMSDTree, color_threshold=0, orientation="left", labels=structureList, leaf_font_size=3,
