@@ -92,8 +92,8 @@ for struc in range(numEntries):
 ###########
 # Alignment
 ###########
-p = PDBParser(QUIET=True)
 
+p = PDBParser(QUIET=True)
 
 # RMSD calculation for a specific region
 
@@ -121,7 +121,7 @@ def align(template: Structure,
           rmsd_resi_start=None,
           rmsd_resi_end=None,
           atom_type="CA") -> list:
-    """Aligns a mobile structure onto a template structure using the atom types listed in 'atom_types' and calculates
+    """Aligns a mobile structure onto a template structure using the atom type listed in 'atom_types' and calculates
     the RMSD for a specific region of that alignment."""
 
     # Get the coordinates of the Atom object if the Atom is from an amino acid residue,
