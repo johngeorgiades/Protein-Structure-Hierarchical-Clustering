@@ -24,7 +24,8 @@ from scipy.spatial.distance import squareform  # use to convert redundant distan
 assert os.path.exists("./pdbEntries.csv"), ("The pdbEntries.csv file is missing from the root directory. Please add a "
                                             ".csv file that includes a list of PDB codes in column A and (optional) "
                                             "chains in column B that correspond to the PDB codes in column A. Each row "
-                                            "will be read as an entry.")
+                                            "will be read as an entry. Please see the README.txt file for additional "
+                                            "details.")
 
 pdbEntries = np.genfromtxt("pdbEntries.csv", dtype=str, encoding="utf-8-sig", delimiter=",", usemask=True)
 numEntries = np.ma.shape(pdbEntries)[0]
