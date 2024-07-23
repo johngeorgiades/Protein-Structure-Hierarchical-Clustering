@@ -1,5 +1,7 @@
 # Protein Structure Hierarchical Clustering
 
+Thanks for visiting this GitHub repository! This code was written to cluster a set of protein structures based on the RMSD differences of alpha carbons globally and in a specific region of the protein. The general strategy was modeled off of the approach taken in this [paper](https://doi.org/10.1038/s42003-018-0236-y).
+
 ## Python Packages
 
 All necessary Python packages are specified in the requirements.txt folder.
