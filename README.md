@@ -71,7 +71,7 @@ The main.py script WILL overwrite files in this directory.
 
 ## Citation
 
-If this code helped you in your work, please consider supporting us by citing the following [paper](https://doi.org/).
+If this code helped you in your work, please consider supporting us by citing the following [paper](https://doi.org/10.1021/acsinfecdis.4c00768).
 
 ## License
 
